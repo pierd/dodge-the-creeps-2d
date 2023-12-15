@@ -1,8 +1,9 @@
 extends Area2D
 
 signal hit
-@export var speed = 400
-var screen_size
+
+export var speed = 400 # How fast the player will move (pixels/sec).
+var screen_size # Size of the game window.
 
 
 func _ready():
@@ -10,46 +11,44 @@ func _ready():
 	hide()
 
 
-const DIRECTIONS = {
-	"move_right": Vector2.RIGHT,
-	"move_left": Vector2.LEFT,
-	"move_down": Vector2.DOWN,
-	"move_up": Vector2.UP,
-}
-
 func _process(delta):
-	var velocity = Vector2.ZERO
-	
-	for action in DIRECTIONS.keys():
-		if Input.is_action_pressed(action):
-			velocity += DIRECTIONS[action]
-	
+	var velocity = Vector2.ZERO # The player's movement vector.
+	if Input.is_action_pressed("move_right"):
+		velocity.x += 1
+	if Input.is_action_pressed("move_left"):
+		velocity.x -= 1
+	if Input.is_action_pressed("move_down"):
+		velocity.y += 1
+	if Input.is_action_pressed("move_up"):
+		velocity.y -= 1
+
 	if velocity.length() > 0:
 		velocity = velocity.normalized() * speed
-		$AnimatedSprite2D.play()
+		$AnimatedSprite.play()
 	else:
-		$AnimatedSprite2D.stop()
-		
-	if velocity.x != 0:
-		$AnimatedSprite2D.animation = "walk"
-		$AnimatedSprite2D.flip_v = false
-		$AnimatedSprite2D.flip_h = velocity.x < 0
-	elif velocity.y != 0:
-		$AnimatedSprite2D.animation = "up"
-		$AnimatedSprite2D.flip_v = velocity.y > 0
-		
+		$AnimatedSprite.stop()
+
 	position += velocity * delta
-	position = position.clamp(Vector2.ZERO, screen_size)
+	position.x = clamp(position.x, 0, screen_size.x)
+	position.y = clamp(position.y, 0, screen_size.y)
 
-
-func _on_body_entered(body):
-	hide()
-	hit.emit()
-	# deferred since it's called on a physics callback (and we can't change physics props in it)
-	$CollisionShape2D.set_deferred("disabled", true)
+	if velocity.x != 0:
+		$AnimatedSprite.animation = "right"
+		$AnimatedSprite.flip_v = false
+		$AnimatedSprite.flip_h = velocity.x < 0
+	elif velocity.y != 0:
+		$AnimatedSprite.animation = "up"
+		$AnimatedSprite.flip_v = velocity.y > 0
 
 
 func start(pos):
 	position = pos
 	show()
 	$CollisionShape2D.disabled = false
+
+
+func _on_Player_body_entered(_body):
+	hide() # Player disappears after being hit.
+	emit_signal("hit")
+	# Must be deferred as we can't change physics properties on a physics callback.
+	$CollisionShape2D.set_deferred("disabled", true)
