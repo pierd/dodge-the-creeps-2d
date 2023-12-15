@@ -4,12 +4,20 @@ signal hit
 
 export var speed = 400 # How fast the player will move (pixels/sec).
 var screen_size # Size of the game window.
-
+var touch_position
 
 func _ready():
 	screen_size = get_viewport_rect().size
 	hide()
 
+func _input(event):
+	if event is InputEventScreenTouch or event is InputEventMouseButton:
+		if event.pressed:
+			touch_position = event.position
+		else:
+			touch_position = null
+	elif event is InputEventMouseMotion and touch_position:
+		touch_position = event.position
 
 func _process(delta):
 	var velocity = Vector2.ZERO # The player's movement vector.
@@ -21,6 +29,8 @@ func _process(delta):
 		velocity.y += 1
 	if Input.is_action_pressed("move_up"):
 		velocity.y -= 1
+	if touch_position:
+		velocity = touch_position - position
 
 	if velocity.length() > 0:
 		velocity = velocity.normalized() * speed
